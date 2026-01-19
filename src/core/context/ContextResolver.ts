@@ -8,6 +8,18 @@ export interface ContextItem {
     type: 'file' | 'section' | 'variable';
 }
 
+export class ContextResolutionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ContextResolutionError';
+    }
+}
+
+export class ContextResolver {
+    private contextMap: Map<string, string>;
+    private tideateRoot: string;
+
+    constructor(private workspaceRoot: string) {
 export class ContextResolver {
     private contextMap: Map<string, string>;
     private tideateRoot: string;
@@ -30,12 +42,24 @@ export class ContextResolver {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
             const map = new Map<string, string>();
 
+            if (config.mappings) {
+                for (const [mention, filePath] of Object.entries(config.mappings)) {
+                    map.set(mention, filePath as string);
+                }
             for (const [mention, filePath] of Object.entries(config.mappings || {})) {
                 map.set(mention, filePath as string);
             }
 
             return map;
         } catch (error) {
+            throw new Error(`Malformed context config file: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    /**
+     * Resolve a single @mention to file content
+     * DETERMINISTIC: No AI involvement, direct file read
+     */
             console.error('Error parsing context.json:', error);
             return new Map();
         }
@@ -45,6 +69,18 @@ export class ContextResolver {
         const relativePath = this.contextMap.get(mention);
 
         if (!relativePath) {
+            throw new ContextResolutionError(`Unknown mention: ${mention}`);
+        }
+
+        const fullPath = relativePath.startsWith('..')
+            ? path.resolve(this.tideateRoot, relativePath)
+            : path.join(this.tideateRoot, relativePath);
+
+        if (!fs.existsSync(fullPath)) {
+            throw new ContextResolutionError(`File not found: ${fullPath}`);
+        }
+
+        // Read raw content - NO AI PROCESSING
             throw new Error(`Unknown mention: ${mention}`);
         }
 
@@ -76,16 +112,25 @@ export class ContextResolver {
         };
     }
 
+    /**
+     * Resolve multiple @mentions
+     */
     resolveAll(mentions: string[]): ContextItem[] {
         return mentions.map(m => this.resolve(m));
     }
 
+    /**
+     * Extract @mentions from text
+     */
     extractMentions(text: string): string[] {
         const pattern = /@\w+/g;
         const matches = text.match(pattern) || [];
         return [...new Set(matches)];
     }
 
+    /**
+     * Format contexts for injection into AI prompt
+     */
     formatForPrompt(contexts: ContextItem[]): string {
         return contexts.map(ctx => `
 # Context: ${ctx.mention}
@@ -95,5 +140,12 @@ ${ctx.content}
 
 ---
 `).join('\n');
+    }
+
+    /**
+     * Get all available mentions
+     */
+    getAvailableMentions(): string[] {
+        return Array.from(this.contextMap.keys());
     }
 }
