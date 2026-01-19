@@ -49,6 +49,7 @@ import { ClineTempManager } from "./services/temp"
 import { SharedUriHandler } from "./services/uri/SharedUriHandler"
 import { ShowMessageType } from "./shared/proto/host/window"
 import { fileExistsAtPath } from "./utils/fs"
+import { FirebaseServiceProvider } from "./firebase/FirebaseServiceProvider"
 /*
 Built using https://github.com/microsoft/vscode-webview-ui-toolkit
 
@@ -62,6 +63,13 @@ https://github.com/microsoft/vscode-webview-ui-toolkit-samples/tree/main/framewo
 // Your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
 	setupHostProvider(context)
+
+	// Initialize Firebase services
+	try {
+		FirebaseServiceProvider.getInstance().initialize(context);
+	} catch (error) {
+		Logger.log("Failed to initialize Firebase services: " + error);
+	}
 
 	// Initialize hook discovery cache for performance optimization
 	HookDiscoveryCache.getInstance().initialize(
