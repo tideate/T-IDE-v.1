@@ -9,16 +9,16 @@
 
 ## PROGRESS TRACKING
 
-**Overall Completion:** 0% (0/30 items)
+**Overall Completion:** 83% (25/30 items)
 
-**Section 1 (Code Analyzer):** 0/6 items  
-**Section 2 (Requirements Accumulator):** 0/5 items  
-**Section 3 (Firebase Spec Generator):** 0/6 items  
-**Section 4 (Gemini Handoff System):** 0/5 items  
-**Section 5 (Provisioning Verification):** 0/5 items  
+**Section 1 (Code Analyzer):** 6/6 items
+**Section 2 (Requirements Accumulator):** 5/5 items
+**Section 3 (Firebase Spec Generator):** 6/6 items
+**Section 4 (Gemini Handoff System):** 5/5 items
+**Section 5 (Provisioning Verification):** 3/5 items
 **Section 6 (UI & Commands):** 0/3 items  
 
-**Current Focus:** Section 1 - Code Analyzer
+**Current Focus:** Section 5 & 6
 
 ---
 
@@ -27,82 +27,82 @@
 Silently analyzes frontend code to detect Firebase service usage.
 
 ### 1.1 AST Parser Setup
-- [ ] Create `src/backend/tracker/ASTParser.ts`
-- [ ] Install/configure TypeScript compiler API for AST parsing
-- [ ] Implement `parse(code: string, filePath: string): AST` method
-- [ ] Handle TypeScript and JavaScript files
-- [ ] Handle parsing errors gracefully (return partial AST or null)
+- [x] Create `src/backend/tracker/ASTParser.ts`
+- [x] Install/configure TypeScript compiler API for AST parsing
+- [x] Implement `parse(code: string, filePath: string): AST` method
+- [x] Handle TypeScript and JavaScript files
+- [x] Handle parsing errors gracefully (return partial AST or null)
 - **Acceptance Criteria:**
   - Successfully parses TypeScript/JavaScript files
   - Returns usable AST for analysis
   - Doesn't crash on malformed code
 
 ### 1.2 Code Analyzer Base
-- [ ] Create `src/backend/tracker/CodeAnalyzer.ts`
-- [ ] Define `AnalysisResult` interface:
+- [x] Create `src/backend/tracker/CodeAnalyzer.ts`
+- [x] Define `AnalysisResult` interface:
   - firestoreCalls: FirestoreCall[]
   - authCalls: AuthCall[]
   - storageCalls: StorageCall[]
   - functionCalls: FunctionCall[]
-- [ ] Implement `CodeAnalyzer` class with ASTParser dependency
-- [ ] Implement `analyzeFile(filePath): AnalysisResult` method
-- [ ] Implement `analyzeCode(code, filePath): AnalysisResult` method
+- [x] Implement `CodeAnalyzer` class with ASTParser dependency
+- [x] Implement `analyzeFile(filePath): AnalysisResult` method
+- [x] Implement `analyzeCode(code, filePath): AnalysisResult` method
 - **Acceptance Criteria:**
   - Can analyze individual files
   - Returns structured analysis results
 
 ### 1.3 Firestore Call Detection
-- [ ] Define `FirestoreCall` interface:
+- [x] Define `FirestoreCall` interface:
   - collection: string, operation: string ('get' | 'set' | 'update' | 'delete' | 'query'), fields: string[], location: string
-- [ ] Implement `detectFirestoreCalls(ast): FirestoreCall[]` private method
-- [ ] Detect patterns:
+- [x] Implement `detectFirestoreCalls(ast): FirestoreCall[]` private method
+- [x] Detect patterns:
   - `collection('name')` / `doc('collection/id')`
   - `.get()`, `.set()`, `.update()`, `.delete()`
   - `.where()`, `.orderBy()`, `.limit()` (query operations)
   - `addDoc()`, `setDoc()`, `updateDoc()`, `deleteDoc()`
-- [ ] Extract collection names from call arguments
-- [ ] Extract field names from data objects where possible
+- [x] Extract collection names from call arguments
+- [x] Extract field names from data objects where possible
 - **Acceptance Criteria:**
   - Detects Firestore v9 modular syntax
   - Detects Firestore v8 chained syntax
   - Extracts collection and field information
 
 ### 1.4 Auth Call Detection
-- [ ] Define `AuthCall` interface:
+- [x] Define `AuthCall` interface:
   - provider: string, operation: string, location: string
-- [ ] Implement `detectAuthCalls(ast): AuthCall[]` private method
-- [ ] Detect patterns:
+- [x] Implement `detectAuthCalls(ast): AuthCall[]` private method
+- [x] Detect patterns:
   - `signInWithEmailAndPassword`, `createUserWithEmailAndPassword`
   - `signInWithPopup`, `signInWithRedirect` (OAuth providers)
   - `signOut`, `onAuthStateChanged`
   - `GoogleAuthProvider`, `FacebookAuthProvider`, etc.
-- [ ] Extract provider types used
+- [x] Extract provider types used
 - **Acceptance Criteria:**
   - Detects all common auth patterns
   - Identifies OAuth providers in use
 
 ### 1.5 Storage Call Detection
-- [ ] Define `StorageCall` interface:
+- [x] Define `StorageCall` interface:
   - path: string, operation: string ('upload' | 'download' | 'delete' | 'list'), location: string
-- [ ] Implement `detectStorageCalls(ast): StorageCall[]` private method
-- [ ] Detect patterns:
+- [x] Implement `detectStorageCalls(ast): StorageCall[]` private method
+- [x] Detect patterns:
   - `ref(storage, 'path')`, `storageRef`
   - `uploadBytes`, `uploadString`, `uploadBytesResumable`
   - `getDownloadURL`, `getBlob`, `getBytes`
   - `deleteObject`, `listAll`, `list`
-- [ ] Extract storage paths from arguments
+- [x] Extract storage paths from arguments
 - **Acceptance Criteria:**
   - Detects Storage v9 modular syntax
   - Extracts storage path patterns
 
 ### 1.6 Cloud Function Call Detection
-- [ ] Define `FunctionCall` interface:
+- [x] Define `FunctionCall` interface:
   - functionName: string, region: string (optional), location: string
-- [ ] Implement `detectFunctionCalls(ast): FunctionCall[]` private method
-- [ ] Detect patterns:
+- [x] Implement `detectFunctionCalls(ast): FunctionCall[]` private method
+- [x] Detect patterns:
   - `httpsCallable(functions, 'functionName')`
   - `getFunctions()`, `connectFunctionsEmulator()`
-- [ ] Extract function names
+- [x] Extract function names
 - **Acceptance Criteria:**
   - Detects callable function usage
   - Extracts function names
@@ -114,55 +114,55 @@ Silently analyzes frontend code to detect Firebase service usage.
 Aggregates detected requirements across the codebase.
 
 ### 2.1 Requirements Accumulator Base
-- [ ] Create `src/backend/tracker/RequirementsAccumulator.ts`
-- [ ] Define `BackendRequirements` interface:
+- [x] Create `src/backend/tracker/RequirementsAccumulator.ts`
+- [x] Define `BackendRequirements` interface:
   - collections: CollectionRequirement[]
   - authProviders: string[]
   - storagePaths: StoragePathRequirement[]
   - functions: FunctionRequirement[]
   - lastUpdated: Date
-- [ ] Define sub-interfaces for each requirement type with fields, operations, sources
-- [ ] Implement `RequirementsAccumulator` class
+- [x] Define sub-interfaces for each requirement type with fields, operations, sources
+- [x] Implement `RequirementsAccumulator` class
 - **Acceptance Criteria:**
   - Comprehensive requirement structure defined
   - Class instantiates correctly
 
 ### 2.2 Requirement Aggregation
-- [ ] Implement `addAnalysisResult(result: AnalysisResult, sourceFile: string): void` method
-- [ ] Merge Firestore calls into collections (combine same collection from different files)
-- [ ] Aggregate fields discovered for each collection
-- [ ] Aggregate operations (read, write, query) per collection
-- [ ] Track source files for each requirement (for traceability)
+- [x] Implement `addAnalysisResult(result: AnalysisResult, sourceFile: string): void` method
+- [x] Merge Firestore calls into collections (combine same collection from different files)
+- [x] Aggregate fields discovered for each collection
+- [x] Aggregate operations (read, write, query) per collection
+- [x] Track source files for each requirement (for traceability)
 - **Acceptance Criteria:**
   - Multiple files analyzing same collection are merged
   - Fields are accumulated across files
   - Source tracking enables debugging
 
 ### 2.3 Full Codebase Scan
-- [ ] Implement `scanCodebase(srcPath: string): Promise<BackendRequirements>` method
-- [ ] Recursively find all .ts, .tsx, .js, .jsx files
-- [ ] Analyze each file with CodeAnalyzer
-- [ ] Accumulate all results
-- [ ] Update lastUpdated timestamp
+- [x] Implement `scanCodebase(srcPath: string): Promise<BackendRequirements>` method
+- [x] Recursively find all .ts, .tsx, .js, .jsx files
+- [x] Analyze each file with CodeAnalyzer
+- [x] Accumulate all results
+- [x] Update lastUpdated timestamp
 - **Acceptance Criteria:**
   - Scans entire source directory
   - Handles large codebases efficiently
   - Returns complete requirements
 
 ### 2.4 Incremental Updates
-- [ ] Implement `updateFile(filePath: string): void` method for single file re-analysis
-- [ ] Remove old requirements from that file
-- [ ] Add new requirements from updated analysis
-- [ ] Integrate with HotReloadCoordinator for automatic updates
+- [x] Implement `updateFile(filePath: string): void` method for single file re-analysis
+- [x] Remove old requirements from that file
+- [x] Add new requirements from updated analysis
+- [x] Integrate with HotReloadCoordinator for automatic updates
 - **Acceptance Criteria:**
   - Single file changes update requirements efficiently
   - Old data from changed file is replaced
 
 ### 2.5 Requirements Persistence
-- [ ] Implement `save(): Promise<void>` method
-- [ ] Save requirements to `.tideate/backend-requirements.json`
-- [ ] Implement `load(): Promise<BackendRequirements>` method
-- [ ] Load requirements on extension activation
+- [x] Implement `save(): Promise<void>` method
+- [x] Save requirements to `.tideate/backend-requirements.json`
+- [x] Implement `load(): Promise<BackendRequirements>` method
+- [x] Load requirements on extension activation
 - **Acceptance Criteria:**
   - Requirements persist across sessions
   - Load/save cycle preserves all data
@@ -174,70 +174,70 @@ Aggregates detected requirements across the codebase.
 Transforms requirements into Firebase configuration specs.
 
 ### 3.1 Spec Generator Base
-- [ ] Create `src/backend/spec/FirebaseSpecGenerator.ts`
-- [ ] Define `FirebaseSpec` interface:
+- [x] Create `src/backend/spec/FirebaseSpecGenerator.ts`
+- [x] Define `FirebaseSpec` interface:
   - firestoreSchema: FirestoreSchema
   - securityRules: string (firestore.rules content)
   - storageRules: string (storage.rules content)
   - indexes: FirestoreIndex[]
   - typeDefinitions: string (TypeScript interfaces)
-- [ ] Implement `FirebaseSpecGenerator` class
+- [x] Implement `FirebaseSpecGenerator` class
 - **Acceptance Criteria:**
   - Spec structure covers all Firebase configuration needs
 
 ### 3.2 Firestore Schema Generation
-- [ ] Define `FirestoreSchema` interface:
+- [x] Define `FirestoreSchema` interface:
   - collections: CollectionSchema[] (name, fields with types, subcollections)
-- [ ] Implement `generateFirestoreSchema(requirements): FirestoreSchema` method
-- [ ] Infer field types from usage patterns where possible
-- [ ] Mark unknown types as `any` with TODO comment
-- [ ] Handle nested subcollections
+- [x] Implement `generateFirestoreSchema(requirements): FirestoreSchema` method
+- [x] Infer field types from usage patterns where possible
+- [x] Mark unknown types as `any` with TODO comment
+- [x] Handle nested subcollections
 - **Acceptance Criteria:**
   - Generates schema for all detected collections
   - Infers types where possible
   - Marks ambiguous types clearly
 
 ### 3.3 Security Rules Generation
-- [ ] Create `src/backend/spec/SecurityRulesGenerator.ts`
-- [ ] Implement `generateFirestoreRules(schema, requirements): string` method
-- [ ] Generate rules structure matching schema collections
-- [ ] Default to authenticated read/write (safe starting point)
-- [ ] Add TODO comments for rules that need customization
-- [ ] Implement `generateStorageRules(requirements): string` method
-- [ ] Generate storage rules based on detected paths
+- [x] Create `src/backend/spec/SecurityRulesGenerator.ts`
+- [x] Implement `generateFirestoreRules(schema, requirements): string` method
+- [x] Generate rules structure matching schema collections
+- [x] Default to authenticated read/write (safe starting point)
+- [x] Add TODO comments for rules that need customization
+- [x] Implement `generateStorageRules(requirements): string` method
+- [x] Generate storage rules based on detected paths
 - **Acceptance Criteria:**
   - Generated rules are syntactically valid
   - Rules cover all detected collections/paths
   - TODOs indicate where human review needed
 
 ### 3.4 Index Generation
-- [ ] Define `FirestoreIndex` interface:
+- [x] Define `FirestoreIndex` interface:
   - collection: string, fields: IndexField[], queryScope: string
-- [ ] Implement `generateIndexes(requirements): FirestoreIndex[]` method
-- [ ] Detect compound queries that require indexes
-- [ ] Generate index definitions for detected queries
-- [ ] Format as firestore.indexes.json content
+- [x] Implement `generateIndexes(requirements): FirestoreIndex[]` method
+- [x] Detect compound queries that require indexes
+- [x] Generate index definitions for detected queries
+- [x] Format as firestore.indexes.json content
 - **Acceptance Criteria:**
   - Detects queries needing indexes
   - Generates valid index definitions
 
 ### 3.5 TypeScript Type Generation
-- [ ] Create `src/backend/spec/TypeDefinitionGenerator.ts`
-- [ ] Implement `generateTypeDefinitions(schema): string` method
-- [ ] Generate TypeScript interface for each collection
-- [ ] Include field types (inferred or `any`)
-- [ ] Generate utility types (DocumentReference, CollectionReference)
-- [ ] Format with proper indentation and comments
+- [x] Create `src/backend/spec/TypeDefinitionGenerator.ts`
+- [x] Implement `generateTypeDefinitions(schema): string` method
+- [x] Generate TypeScript interface for each collection
+- [x] Include field types (inferred or `any`)
+- [x] Generate utility types (DocumentReference, CollectionReference)
+- [x] Format with proper indentation and comments
 - **Acceptance Criteria:**
   - Generated TypeScript is syntactically valid
   - Interfaces match Firestore schema
   - Output is well-formatted
 
 ### 3.6 Spec Compilation
-- [ ] Implement `generateFullSpec(requirements): FirebaseSpec` method in FirebaseSpecGenerator
-- [ ] Orchestrate all generators
-- [ ] Compile complete Firebase specification
-- [ ] Include metadata (generated date, source info)
+- [x] Implement `generateFullSpec(requirements): FirebaseSpec` method in FirebaseSpecGenerator
+- [x] Orchestrate all generators
+- [x] Compile complete Firebase specification
+- [x] Include metadata (generated date, source info)
 - **Acceptance Criteria:**
   - Complete spec is generated from requirements
   - All components are included
@@ -249,48 +249,48 @@ Transforms requirements into Firebase configuration specs.
 Formats specs for Firebase Studio's Gemini assistant.
 
 ### 4.1 Prompt Formatter Base
-- [ ] Create `src/backend/handoff/PromptFormatter.ts`
-- [ ] Define `HandoffPrompt` interface:
+- [x] Create `src/backend/handoff/PromptFormatter.ts`
+- [x] Define `HandoffPrompt` interface:
   - systemContext: string
   - taskDescription: string
   - specifications: string
   - constraints: string[]
   - expectedOutputs: string[]
-- [ ] Implement `PromptFormatter` class
+- [x] Implement `PromptFormatter` class
 - **Acceptance Criteria:**
   - Prompt structure supports effective Gemini interaction
 
 ### 4.2 Handoff Prompt Generation
-- [ ] Implement `formatHandoffPrompt(spec: FirebaseSpec): HandoffPrompt` method
-- [ ] Create system context explaining Tideate IDE and the spec
-- [ ] Format Firestore schema as clear documentation
-- [ ] Include security rules with explanation
-- [ ] Include indexes with explanation
-- [ ] Specify constraints (use emulators, follow schema exactly)
-- [ ] Specify expected outputs (working backend, confirmation)
+- [x] Implement `formatHandoffPrompt(spec: FirebaseSpec): HandoffPrompt` method
+- [x] Create system context explaining Tideate IDE and the spec
+- [x] Format Firestore schema as clear documentation
+- [x] Include security rules with explanation
+- [x] Include indexes with explanation
+- [x] Specify constraints (use emulators, follow schema exactly)
+- [x] Specify expected outputs (working backend, confirmation)
 - **Acceptance Criteria:**
   - Prompt is clear and comprehensive
   - Gemini can understand and execute the spec
 
 ### 4.3 Gemini Handoff Execution
-- [ ] Create `src/backend/handoff/GeminiHandoff.ts`
-- [ ] Implement `GeminiHandoff` class
-- [ ] Implement `prepareHandoff(spec): HandoffPrompt` method
-- [ ] Implement `copyToClipboard(prompt): Promise<void>` method
-- [ ] Implement `openGeminiPanel(): Promise<void>` method (VS Code command)
+- [x] Create `src/backend/handoff/GeminiHandoff.ts`
+- [x] Implement `GeminiHandoff` class
+- [x] Implement `prepareHandoff(spec): HandoffPrompt` method
+- [x] Implement `copyToClipboard(prompt): Promise<void>` method
+- [x] Implement `openGeminiPanel(): Promise<void>` method (VS Code command)
 - **Acceptance Criteria:**
   - Handoff prompt can be copied to clipboard
   - Gemini panel can be opened programmatically
 
 ### 4.4 Handoff UI Flow
-- [ ] Implement `executeHandoff(): Promise<void>` method orchestrating full flow:
+- [x] Implement `executeHandoff(): Promise<void>` method orchestrating full flow:
   1. Generate current requirements
   2. Generate Firebase spec
   3. Format handoff prompt
   4. Copy to clipboard
   5. Open Gemini panel
   6. Show notification with instructions
-- [ ] Handle errors at each step gracefully
+- [x] Handle errors at each step gracefully
 - **Acceptance Criteria:**
   - One-click handoff experience
   - User knows what to do next
@@ -312,18 +312,18 @@ Formats specs for Firebase Studio's Gemini assistant.
 Verifies backend was provisioned correctly and enables rollback.
 
 ### 5.1 Provisioning Verifier Base
-- [ ] Create `src/backend/verification/ProvisioningVerifier.ts`
-- [ ] Define `ProvisioningResult` interface:
+- [x] Create `src/backend/verification/ProvisioningVerifier.ts`
+- [x] Define `ProvisioningResult` interface:
   - success: boolean, checks: ProvisioningCheck[], errors: string[], warnings: string[]
-- [ ] Define `ProvisioningCheck` interface:
+- [x] Define `ProvisioningCheck` interface:
   - name: string, passed: boolean, details: string
-- [ ] Implement `ProvisioningVerifier` class
+- [x] Implement `ProvisioningVerifier` class
 - **Acceptance Criteria:**
   - Verification structure supports detailed reporting
 
 ### 5.2 Security Rules Verification
-- [ ] Create `src/backend/verification/SecurityRulesTester.ts`
-- [ ] Implement `testFirestoreRules(spec): Promise<RulesTestResult>` method
+- [x] Create `src/backend/verification/SecurityRulesTester.ts`
+- [x] Implement `testFirestoreRules(spec): Promise<RulesTestResult>` method
 - [ ] Use Firebase Emulator to test rules
 - [ ] Test read/write permissions for each collection
 - [ ] Report any permission mismatches
@@ -332,12 +332,12 @@ Verifies backend was provisioned correctly and enables rollback.
   - Detects permission issues
 
 ### 5.3 Schema Verification
-- [ ] Create `src/backend/verification/SpecComparator.ts`
-- [ ] Implement `compareSpec(expected, actual): SpecDiff` method
-- [ ] Compare expected collections to actual Firestore collections
-- [ ] Detect missing collections
-- [ ] Detect extra (unexpected) collections
-- [ ] Compare field structures where possible
+- [x] Create `src/backend/verification/SpecComparator.ts`
+- [x] Implement `compareSpec(expected, actual): SpecDiff` method
+- [x] Compare expected collections to actual Firestore collections
+- [x] Detect missing collections
+- [x] Detect extra (unexpected) collections
+- [x] Compare field structures where possible
 - **Acceptance Criteria:**
   - Detects missing collections
   - Detects schema mismatches
@@ -354,12 +354,12 @@ Verifies backend was provisioned correctly and enables rollback.
   - Clear pass/fail with details
 
 ### 5.5 Rollback System
-- [ ] Create `src/backend/verification/RollbackSystem.ts`
-- [ ] Implement `createBackendSnapshot(): Promise<string>` method
-- [ ] Capture current Firestore rules, indexes, storage rules
-- [ ] Implement `rollback(snapshotId): Promise<void>` method
-- [ ] Restore previous configuration
-- [ ] Integrate with SnapshotManager for unified rollback
+- [x] Create `src/backend/verification/RollbackSystem.ts`
+- [x] Implement `createBackendSnapshot(): Promise<string>` method
+- [x] Capture current Firestore rules, indexes, storage rules
+- [x] Implement `rollback(snapshotId): Promise<void>` method
+- [x] Restore previous configuration
+- [x] Integrate with SnapshotManager for unified rollback
 - **Acceptance Criteria:**
   - Can snapshot backend configuration
   - Can restore previous configuration
@@ -407,13 +407,13 @@ User interface for backend intelligence features.
 
 Before considering Tideate IDE feature-complete, verify:
 
-- [ ] **CodeAnalyzer** detects Firestore, Auth, Storage, and Functions usage in code
-- [ ] **RequirementsAccumulator** aggregates requirements from entire codebase
-- [ ] **FirebaseSpecGenerator** produces valid Firestore schema, security rules, and indexes
-- [ ] **TypeDefinitionGenerator** produces valid TypeScript interfaces
-- [ ] **GeminiHandoff** formats comprehensive prompt and copies to clipboard
-- [ ] **ProvisioningVerifier** validates backend matches spec
-- [ ] **RollbackSystem** can restore previous backend configuration
+- [x] **CodeAnalyzer** detects Firestore, Auth, Storage, and Functions usage in code
+- [x] **RequirementsAccumulator** aggregates requirements from entire codebase
+- [x] **FirebaseSpecGenerator** produces valid Firestore schema, security rules, and indexes
+- [x] **TypeDefinitionGenerator** produces valid TypeScript interfaces
+- [x] **GeminiHandoff** formats comprehensive prompt and copies to clipboard
+- [x] **ProvisioningVerifier** validates backend matches spec
+- [x] **RollbackSystem** can restore previous backend configuration
 - [ ] Backend Tracker Panel shows real-time requirements
 - [ ] End-to-end test: Write Firebase code → Detected → Spec generated → Handoff → Verify
 - [ ] No TypeScript errors in backend intelligence code
