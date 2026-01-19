@@ -50,73 +50,88 @@ export class CodeAnalyzer {
   }
 
   private analyzeSourceFile(sourceFile: SourceFile): AnalysisResult {
-    return {
-      firestoreCalls: this.detectFirestoreCalls(sourceFile),
-      authCalls: this.detectAuthCalls(sourceFile),
-      storageCalls: this.detectStorageCalls(sourceFile),
-      functionCalls: this.detectFunctionCalls(sourceFile),
-    };
-  }
+    // Single pass traversal optimization
+    const firestoreCalls: FirestoreCall[] = [];
+    const authCalls: AuthCall[] = [];
+    const storageCalls: StorageCall[] = [];
+    const functionCalls: FunctionCall[] = [];
 
-  private detectFirestoreCalls(sourceFile: SourceFile): FirestoreCall[] {
-    const calls: FirestoreCall[] = [];
     const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
 
     for (const call of callExpressions) {
+      this.processCallExpression(call, sourceFile, {
+        firestoreCalls,
+        authCalls,
+        storageCalls,
+        functionCalls
+      });
+    }
+
+    return {
+      firestoreCalls,
+      authCalls,
+      storageCalls,
+      functionCalls,
+    };
+  }
+
+  private processCallExpression(
+      call: CallExpression,
+      sourceFile: SourceFile,
+      accumulators: {
+          firestoreCalls: FirestoreCall[],
+          authCalls: AuthCall[],
+          storageCalls: StorageCall[],
+          functionCalls: FunctionCall[]
+      }
+  ) {
       const expression = call.getExpression();
       const text = expression.getText();
       const args = call.getArguments();
+      const location = this.getLocation(sourceFile, call);
 
-      // Basic detection logic - can be enhanced
-      // collection('name')
+      // --- Firestore Detection ---
       if (text.endsWith('collection') || text.includes('.collection')) {
-        if (args.length >= 2) {
-            // collection(db, 'name')
-            const collectionName = args[1].getText().replace(/['"`]/g, '');
-            calls.push({
+          let collectionName = '';
+          if (args.length >= 2) {
+              collectionName = args[1].getText().replace(/['"`]/g, '');
+          } else if (args.length === 1) {
+              collectionName = args[0].getText().replace(/['"`]/g, '');
+          }
+          if (collectionName) {
+            accumulators.firestoreCalls.push({
                 collection: collectionName,
                 operation: 'reference',
                 fields: [],
-                location: this.getLocation(sourceFile, call),
+                location
             });
-        } else if (args.length === 1) {
-          const collectionName = args[0].getText().replace(/['"`]/g, '');
-          calls.push({
-            collection: collectionName,
-            operation: 'reference',
-            fields: [],
-            location: this.getLocation(sourceFile, call),
-          });
-        }
+          }
       }
 
-      // doc('collection/id')
       if (text.endsWith('doc') || text.includes('.doc')) {
-          if (args.length >= 2) {
-               // doc(db, 'collection', 'id')
+           if (args.length >= 2) {
                const collectionName = args[1].getText().replace(/['"`]/g, '');
-               calls.push({
+               accumulators.firestoreCalls.push({
                   collection: collectionName,
                   operation: 'reference',
                   fields: [],
-                  location: this.getLocation(sourceFile, call),
+                  location
                });
           } else if (args.length === 1) {
               const argText = args[0].getText().replace(/['"`]/g, '');
               if (argText.includes('/')) {
                   const collectionName = argText.split('/')[0];
-                  calls.push({
+                  accumulators.firestoreCalls.push({
                       collection: collectionName,
                       operation: 'reference',
                       fields: [],
-                      location: this.getLocation(sourceFile, call),
+                      location
                   });
               }
           }
       }
 
-      // Operations: getDocs, getDoc, setDoc, updateDoc, deleteDoc, addDoc
-      const operationMap: {[key: string]: string} = {
+      const firestoreOps: {[key: string]: string} = {
           'getDocs': 'get',
           'getDoc': 'get',
           'setDoc': 'set',
@@ -125,17 +140,11 @@ export class CodeAnalyzer {
           'addDoc': 'add'
       };
 
-      for (const [op, type] of Object.entries(operationMap)) {
+      for (const [op, type] of Object.entries(firestoreOps)) {
           if (text.endsWith(op)) {
-               // Usually the first arg is the reference. We might need to trace it back,
-               // but for now we capture the operation.
-               // If we can find the collection from the reference variable, that would be ideal.
-               // For this implementation, we might not link it perfectly without deeper flow analysis.
-               // However, we can look for 'fields' in the data argument (usually 2nd for set/update/add).
-
                let fields: string[] = [];
                if ((type === 'set' || type === 'update' || type === 'add') && args.length >= 2) {
-                   const dataArg = args[1]; // Usually 2nd arg
+                   const dataArg = args[1];
                    if (Node.isObjectLiteralExpression(dataArg)) {
                        fields = dataArg.getProperties().map(p => {
                            if (Node.isPropertyAssignment(p)) {
@@ -145,88 +154,51 @@ export class CodeAnalyzer {
                        }).filter(f => f !== '');
                    }
                }
-
-               calls.push({
-                   collection: 'unknown', // Hard to infer without flow analysis
+               accumulators.firestoreCalls.push({
+                   collection: 'unknown',
                    operation: type,
                    fields: fields,
-                   location: this.getLocation(sourceFile, call)
+                   location
                });
           }
       }
-    }
 
-    // Clean up unknown collections if possible (future improvement)
-    return calls;
-  }
-
-  private detectAuthCalls(sourceFile: SourceFile): AuthCall[] {
-    const calls: AuthCall[] = [];
-    const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
-
-    for (const call of callExpressions) {
-        const text = call.getExpression().getText();
-
-        if (text.includes('signInWithEmailAndPassword')) {
-            calls.push({ provider: 'email', operation: 'signIn', location: this.getLocation(sourceFile, call) });
-        } else if (text.includes('createUserWithEmailAndPassword')) {
-            calls.push({ provider: 'email', operation: 'signUp', location: this.getLocation(sourceFile, call) });
-        } else if (text.includes('signInWithPopup') || text.includes('signInWithRedirect')) {
-            // Check arguments for provider
-            const args = call.getArguments();
-            let provider = 'unknown';
-            if (args.length > 1) {
-                const providerArg = args[1].getText();
-                if (providerArg.includes('GoogleAuthProvider')) provider = 'google';
-                else if (providerArg.includes('FacebookAuthProvider')) provider = 'facebook';
-                else if (providerArg.includes('GithubAuthProvider')) provider = 'github';
-            }
-             calls.push({ provider, operation: 'signIn', location: this.getLocation(sourceFile, call) });
-        } else if (text.includes('signOut')) {
-             calls.push({ provider: 'any', operation: 'signOut', location: this.getLocation(sourceFile, call) });
+      // --- Auth Detection ---
+      if (text.includes('signInWithEmailAndPassword')) {
+        accumulators.authCalls.push({ provider: 'email', operation: 'signIn', location });
+      } else if (text.includes('createUserWithEmailAndPassword')) {
+        accumulators.authCalls.push({ provider: 'email', operation: 'signUp', location });
+      } else if (text.includes('signInWithPopup') || text.includes('signInWithRedirect')) {
+        let provider = 'unknown';
+        if (args.length > 1) {
+            const providerArg = args[1].getText();
+            if (providerArg.includes('GoogleAuthProvider')) provider = 'google';
+            else if (providerArg.includes('FacebookAuthProvider')) provider = 'facebook';
+            else if (providerArg.includes('GithubAuthProvider')) provider = 'github';
         }
-    }
-    return calls;
-  }
+        accumulators.authCalls.push({ provider, operation: 'signIn', location });
+      } else if (text.includes('signOut')) {
+        accumulators.authCalls.push({ provider: 'any', operation: 'signOut', location });
+      }
 
-  private detectStorageCalls(sourceFile: SourceFile): StorageCall[] {
-    const calls: StorageCall[] = [];
-    const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
+      // --- Storage Detection ---
+      if (text.endsWith('ref') && args.length >= 2) {
+          const path = args[1].getText().replace(/['"`]/g, '');
+          accumulators.storageCalls.push({ path, operation: 'reference', location });
+      }
 
-    for (const call of callExpressions) {
-        const text = call.getExpression().getText();
-        const args = call.getArguments();
+      const storageOps = ['uploadBytes', 'uploadString', 'getDownloadURL', 'deleteObject', 'listAll'];
+      for (const op of storageOps) {
+          if (text.endsWith(op)) {
+            accumulators.storageCalls.push({ path: 'unknown', operation: op, location });
+          }
+      }
 
-        if (text.endsWith('ref') && args.length >= 2) {
-             // ref(storage, 'path')
-             const path = args[1].getText().replace(/['"`]/g, '');
-             calls.push({ path, operation: 'reference', location: this.getLocation(sourceFile, call) });
-        }
-
-        const ops = ['uploadBytes', 'uploadString', 'getDownloadURL', 'deleteObject', 'listAll'];
-        for (const op of ops) {
-            if (text.endsWith(op)) {
-                calls.push({ path: 'unknown', operation: op, location: this.getLocation(sourceFile, call) });
-            }
-        }
-    }
-    return calls;
-  }
-
-  private detectFunctionCalls(sourceFile: SourceFile): FunctionCall[] {
-    const calls: FunctionCall[] = [];
-     const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
-
-    for (const call of callExpressions) {
-        const text = call.getExpression().getText();
-        const args = call.getArguments();
-
-        if (text.endsWith('httpsCallable') && args.length >= 2) {
-            const functionName = args[1].getText().replace(/['"`]/g, '');
-            calls.push({ functionName, location: this.getLocation(sourceFile, call) });
-        }
-    }
-    return calls;
+      // --- Function Detection ---
+      if (text.endsWith('httpsCallable') && args.length >= 2) {
+          const functionName = args[1].getText().replace(/['"`]/g, '');
+          accumulators.functionCalls.push({ functionName, location });
+      }
   }
 
   private getLocation(sourceFile: SourceFile, node: Node): string {

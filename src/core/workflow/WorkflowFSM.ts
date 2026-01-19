@@ -1,5 +1,3 @@
-import { VerificationReport } from '../verification/VerificationPipeline';
-
 export enum WorkflowState {
     IDLE = 'idle',
     PLANNING = 'planning',
@@ -34,6 +32,7 @@ export enum WorkflowEvent {
     VERIFICATION_FAILED = 'verification_failed',
     CORRECTION_SUCCEEDED = 'correction_succeeded',
     CORRECTION_EXHAUSTED = 'correction_exhausted',
+    FORCE_SUCCESS = 'force_success',
     RESET = 'reset'
 }
 
@@ -87,13 +86,15 @@ export class WorkflowFSM {
         ])],
         [WorkflowState.SELF_CORRECTING, new Map([
             [WorkflowEvent.CORRECTION_SUCCEEDED, WorkflowState.VERIFYING],
-            [WorkflowEvent.CORRECTION_EXHAUSTED, WorkflowState.FAILED]
+            [WorkflowEvent.CORRECTION_EXHAUSTED, WorkflowState.FAILED],
+            [WorkflowEvent.FORCE_SUCCESS, WorkflowState.COMPLETE]
         ])],
         [WorkflowState.COMPLETE, new Map([
             [WorkflowEvent.RESET, WorkflowState.IDLE]
         ])],
         [WorkflowState.FAILED, new Map([
-            [WorkflowEvent.RESET, WorkflowState.IDLE]
+            [WorkflowEvent.RESET, WorkflowState.IDLE],
+            [WorkflowEvent.FORCE_SUCCESS, WorkflowState.COMPLETE]
         ])]
     ]);
 

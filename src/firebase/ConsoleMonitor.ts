@@ -7,37 +7,42 @@ export interface ConsoleMessage {
     timestamp: Date;
 }
 
+export interface PreviewFrame {
+    // Defines the interface for the preview frame (e.g. webview)
+    postMessage(message: unknown): Thenable<boolean>;
+}
+
+export interface PreviewMessage {
+    type: string;
+    message?: string;
+    stack?: string;
+    [key: string]: unknown;
+}
+
 export class ConsoleMonitor {
-    private attachedFrame: any = null;
+    private attachedFrame: PreviewFrame | null = null;
     private messageBuffer: ConsoleMessage[] = [];
     private readonly BUFFER_LIMIT = 1000;
 
     // Event listeners
-    private listeners: Record<string, Function[]> = {};
+    private listeners: Record<string, ((data: unknown) => void)[]> = {};
 
     constructor(private runtimeErrorDetector?: RuntimeErrorDetector) {}
 
     /**
      * Attach to preview frame
      */
-    async attach(frame: any): Promise<void> {
+    async attach(frame: PreviewFrame): Promise<void> {
         this.attachedFrame = frame;
-
         // In a real implementation we would inject a script into the webview/frame
-        // to capture console output and send it back via postMessage.
-        // Since we don't have the actual webview implementation here,
-        // we will simulate the receiving of messages.
-
-        // This method assumes the frame exposes some way to listen to messages
-        // or we setup a listener on the webview panel.
     }
 
     /**
      * Handle incoming message from preview
      */
-    public handleMessage(message: any): void {
+    public handleMessage(message: PreviewMessage): void {
         const consoleMsg: ConsoleMessage = {
-            type: message.type || 'log',
+            type: (message.type as 'log' | 'info' | 'warn' | 'error') || 'log',
             message: message.message || '',
             stack: message.stack,
             timestamp: new Date()
@@ -64,7 +69,7 @@ export class ConsoleMonitor {
     /**
      * Handle uncaught exception from preview
      */
-    public handleException(error: any): void {
+    public handleException(error: Error): void {
          if (this.runtimeErrorDetector) {
             const runtimeError: RuntimeError = {
                 type: 'exception',
@@ -93,14 +98,14 @@ export class ConsoleMonitor {
         this.messageBuffer = [];
     }
 
-    public on(event: string, callback: Function): void {
+    public on(event: string, callback: (data: unknown) => void): void {
         if (!this.listeners[event]) {
             this.listeners[event] = [];
         }
         this.listeners[event].push(callback);
     }
 
-    private emit(event: string, data: any): void {
+    private emit(event: string, data: unknown): void {
         if (this.listeners[event]) {
             this.listeners[event].forEach(cb => cb(data));
         }

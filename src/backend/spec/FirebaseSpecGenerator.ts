@@ -1,7 +1,34 @@
 import { BackendRequirements } from '../tracker/RequirementsAccumulator';
-import { CollectionSchema, FirestoreSchema, FirestoreIndex, FirebaseSpec } from './FirebaseSpecGenerator';
 import { SecurityRulesGenerator } from './SecurityRulesGenerator';
 import { TypeDefinitionGenerator } from './TypeDefinitionGenerator';
+
+export interface CollectionSchema {
+    name: string;
+    fields: { [key: string]: string };
+    subcollections: CollectionSchema[];
+}
+
+export interface FirestoreSchema {
+    collections: CollectionSchema[];
+}
+
+export interface FirestoreIndex {
+    collection: string;
+    fields: { fieldPath: string, mode: 'ASCENDING' | 'DESCENDING' }[];
+    queryScope: 'COLLECTION' | 'COLLECTION_GROUP';
+}
+
+export interface FirebaseSpec {
+    firestoreSchema: FirestoreSchema;
+    securityRules: string;
+    storageRules: string;
+    indexes: FirestoreIndex[];
+    typeDefinitions: string;
+    metadata: {
+        generatedAt: Date;
+        source: string;
+    };
+}
 
 export class FirebaseSpecGenerator {
     private securityRulesGenerator = new SecurityRulesGenerator();

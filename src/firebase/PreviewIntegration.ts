@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { PreviewFrame } from './ConsoleMonitor';
 
 export enum PreviewState {
     CLOSED,
@@ -9,7 +10,7 @@ export enum PreviewState {
 }
 
 export class PreviewIntegration {
-    private previewFrame: any = null;
+    private previewFrame: PreviewFrame | null = null;
     private state: PreviewState = PreviewState.CLOSED;
 
     constructor() {
@@ -52,7 +53,7 @@ export class PreviewIntegration {
     /**
      * Get the preview frame for console monitoring
      */
-    getPreviewFrame(): any {
+    getPreviewFrame(): PreviewFrame | null {
         return this.previewFrame;
     }
 

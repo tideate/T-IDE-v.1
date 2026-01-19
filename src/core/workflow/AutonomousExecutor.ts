@@ -1,19 +1,22 @@
+import * as vscode from 'vscode';
 import { ChecklistParser, ChecklistItem } from './ChecklistParser';
 import { ChecklistManager } from '../agents/DocumentationAgent';
 import { TaskResult } from '../agents/ExecutionAgent';
 import { Task } from '../agents/PlanningAgent';
 
-// We need an interface for WorkflowOrchestrator since it's in Checklist 2 (not yet implemented fully)
-// But we need to define AutonomousExecutor which depends on it.
-// I will define a minimal interface here or assume it exists.
-// TDD says: "AutonomousExecutor uses WorkflowOrchestrator from Checklist 2"
-// I should define the interface locally if I can't import it.
+// Minimal interface definitions to replace 'any'
+export interface CorrectionAttempt {
+    attemptNumber: number;
+    result: 'success' | 'partial' | 'failed' | 'pending';
+    timestamp: Date;
+    [key: string]: unknown; // Allow flexibility for now
+}
 
 interface WorkflowResult {
     success: boolean;
     task: Task;
     result?: TaskResult;
-    attempts?: any;
+    attempts?: CorrectionAttempt[];
     error?: string;
     rollbackPerformed?: boolean;
 }
@@ -154,14 +157,8 @@ export class AutonomousExecutor {
     }
 
     private async waitForConfirmation(): Promise<void> {
-        // In VS Code, this would show a dialog
-        // We need to handle this carefully if running in a headless environment
-        // NOTE: This direct VS Code API usage is temporary and will be replaced by host bridge
         try {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const vscode = require('vscode');
-            // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-            const result = await (vscode.window as any).showInformationMessage(
+            const result = await vscode.window.showInformationMessage(
                 'Continue autonomous execution?',
                 'Continue',
                 'Stop'
@@ -171,9 +168,7 @@ export class AutonomousExecutor {
                 this.shouldStop = true;
             }
         } catch (e) {
-            // Likely not in VS Code environment, assume continue or stop?
-            // For safety, maybe stop if we can't ask?
-            console.log('[Autonomous] Cannot ask for confirmation (VS Code API missing). Stopping.');
+            console.log('[Autonomous] Cannot ask for confirmation (VS Code API error). Stopping.');
             this.shouldStop = true;
         }
     }
