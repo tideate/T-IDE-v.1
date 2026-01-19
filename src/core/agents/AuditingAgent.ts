@@ -1,5 +1,9 @@
 import { LLMClient } from '../llm/LLMClient';
 import { ExecutionPlan } from './PlanningAgent';
+import { RequirementsAccumulator } from '../../backend/tracker/RequirementsAccumulator';
+import { CodeAnalyzer } from '../../backend/tracker/CodeAnalyzer';
+import { ASTParser } from '../../backend/tracker/ASTParser';
+import * as vscode from 'vscode';
 
 export interface AuditIssue {
     type: 'security' | 'architecture' | 'completeness' | 'other';
@@ -61,10 +65,28 @@ Approval Logic:
 `;
 
 export class AuditingAgent {
-    constructor(private llm: LLMClient) {}
+    private requirementsTracker: RequirementsAccumulator;
+
+    constructor(private llm: LLMClient) {
+        // Initialize tracker - in a real app this might be injected
+        const astParser = new ASTParser();
+        const codeAnalyzer = new CodeAnalyzer(astParser);
+        this.requirementsTracker = new RequirementsAccumulator(codeAnalyzer);
+    }
 
     async review(plan: ExecutionPlan): Promise<AuditReport> {
         const prompt = this.buildAuditPrompt(plan);
+
+        // Perform backend check: Scan codebase to get current requirements
+        // We catch errors to ensure auditing doesn't fail completely if scanning fails
+        try {
+            const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            if (workspacePath) {
+                await this.requirementsTracker.scanCodebase(workspacePath);
+            }
+        } catch (error) {
+            console.error('Failed to scan codebase for auditing:', error);
+        }
 
         const response = await this.llm.complete({
             systemPrompt: AUDITING_SYSTEM_PROMPT,
@@ -72,7 +94,35 @@ export class AuditingAgent {
             responseFormat: 'json'
         });
 
-        return this.parseAuditResponse(response.content, plan.taskId);
+        const report = this.parseAuditResponse(response.content, plan.taskId);
+
+        // Enhance report with backend checks
+        this.checkBackendRequirements(report);
+
+        return report;
+    }
+
+    private checkBackendRequirements(report: AuditReport): void {
+        const reqs = this.requirementsTracker.getRequirements();
+
+        // We can check if the plan addresses detected security gaps.
+        // For example, if we have requirements but no rules, we could flag it.
+        // Or if the plan modifies backend files, we ensure it covers the requirements.
+
+        if (reqs.collections.length > 0) {
+            // Check if there are any obvious security issues detected by the scanner context (conceptually)
+            // For now, we add a general check.
+            const hasAuth = reqs.authProviders.size > 0;
+            if (!hasAuth && reqs.collections.length > 0) {
+                 report.issues.push({
+                     type: 'security',
+                     severity: 'high',
+                     message: 'Backend uses Firestore collections but no Auth provider detected. Ensure security rules are not public.',
+                     autoFixable: false
+                 });
+                 report.securityConcerns.push('Firestore collections detected without Auth provider.');
+            }
+        }
     }
 
     private buildAuditPrompt(plan: ExecutionPlan): string {

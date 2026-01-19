@@ -1,5 +1,15 @@
 # Changelog
 
+## [2024-05-22] - Backend Intelligence Layer (Phase 5)
+
+### Added
+- **Code Analyzer**: Implemented AST-based scanner (`CodeAnalyzer.ts`) to detect usage of Firebase Firestore, Auth, Storage, and Cloud Functions in the codebase.
+- **Requirements Tracker**: Created `RequirementsAccumulator.ts` to aggregate backend requirements across the project and persist them to `.tideate/backend-requirements.json`.
+- **Firebase Spec Generator**: Added `FirebaseSpecGenerator.ts` to automatically generate `firestore.rules`, `storage.rules`, `firestore.indexes.json`, and TypeScript type definitions based on detected usage.
+- **Gemini Handoff System**: Implemented `GeminiHandoff.ts` to generate context-rich prompts for Firebase Studio's Gemini assistant, facilitating one-click cloud resource provisioning.
+- **Provisioning Verifier**: Added `ProvisioningVerifier.ts` and `RollbackSystem.ts` to verify that the active Firebase configuration matches the generated spec and allow rollback to previous states.
+- **Auditing Integration**: Updated `AuditingAgent` to utilize the `RequirementsTracker` for enhanced security and completeness checks during plan review.
+
 ## [2025-02-14] - Firebase Studio Integration
 
 ### ✅ Completed
