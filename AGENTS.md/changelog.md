@@ -1,5 +1,33 @@
 # Changelog
 
+## [2025-02-14] - Firebase Studio Integration
+
+### ✅ Completed
+- Implemented Phase 4 (Firebase Studio Integration) for Tideate IDE.
+- Created `EmulatorManager` to manage Firebase Emulators.
+- Created `PreviewIntegration` to interface with Firebase Studio preview.
+- Created `HotReloadCoordinator` to sync file changes with preview.
+- Created `ConsoleMonitor` to capture and relay logs/errors from preview.
+- Created `EmulatorStatusBar` for UI feedback and control.
+- Integrated all components via `FirebaseServiceProvider` in extension activation.
+
+### 📁 Files Created
+- src/firebase/EmulatorManager.ts
+- src/firebase/PreviewIntegration.ts
+- src/firebase/HotReloadCoordinator.ts
+- src/firebase/ConsoleMonitor.ts
+- src/firebase/EmulatorStatusBar.ts
+- src/firebase/FirebaseServiceProvider.ts
+- src/core/verification/RuntimeErrorDetector.ts
+
+### 📝 Files Modified
+- src/extension.ts
+- package.json
+- AGENTS.md/checklist-4-firebase.md
+- AGENTS.md/changelog.md
+
+---
+
 ## [2024-05-23] - Workflow Engine & FSM Implementation
 
 ### ✅ Completed

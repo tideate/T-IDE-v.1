@@ -222,6 +222,31 @@
 				"title": "Add to Cline Chat",
 				"category": "Cline",
 				"icon": "$(link-external)"
+			},
+			{
+				"command": "tideate.startEmulators",
+				"title": "Start Firebase Emulators",
+				"category": "Tideate"
+			},
+			{
+				"command": "tideate.stopEmulators",
+				"title": "Stop Firebase Emulators",
+				"category": "Tideate"
+			},
+			{
+				"command": "tideate.toggleEmulators",
+				"title": "Toggle Firebase Emulators",
+				"category": "Tideate"
+			},
+			{
+				"command": "tideate.reloadPreview",
+				"title": "Reload Preview",
+				"category": "Tideate"
+			},
+			{
+				"command": "tideate.showEmulatorUI",
+				"title": "Show Emulator UI",
+				"category": "Tideate"
 			}
 		],
 		"keybindings": [
@@ -335,7 +360,29 @@
 		},
 		"configuration": {
 			"title": "Cline",
-			"properties": {}
+			"properties": {
+				"tideate.firebase.autoStartEmulators": {
+					"type": "boolean",
+					"default": false,
+					"description": "Automatically start Firebase Emulators on extension activation"
+				},
+				"tideate.firebase.emulatorPorts": {
+					"type": "object",
+					"default": {
+						"auth": 9099,
+						"firestore": 8080,
+						"storage": 9199,
+						"functions": 5001,
+						"ui": 4000
+					},
+					"description": "Custom ports for Firebase Emulators"
+				},
+				"tideate.firebase.hotReloadDebounce": {
+					"type": "number",
+					"default": 500,
+					"description": "Debounce time in milliseconds for hot reload"
+				}
+			}
 		}
 	},
 	"scripts": {
