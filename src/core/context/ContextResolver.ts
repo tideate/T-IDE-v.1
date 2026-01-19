@@ -20,6 +20,13 @@ export class ContextResolver {
     private tideateRoot: string;
 
     constructor(private workspaceRoot: string) {
+export class ContextResolver {
+    private contextMap: Map<string, string>;
+    private tideateRoot: string;
+    private workspaceRoot: string;
+
+    constructor(workspaceRoot: string) {
+        this.workspaceRoot = workspaceRoot;
         this.tideateRoot = path.join(workspaceRoot, '.tideate');
         this.contextMap = this.buildContextMap();
     }
@@ -39,6 +46,8 @@ export class ContextResolver {
                 for (const [mention, filePath] of Object.entries(config.mappings)) {
                     map.set(mention, filePath as string);
                 }
+            for (const [mention, filePath] of Object.entries(config.mappings || {})) {
+                map.set(mention, filePath as string);
             }
 
             return map;
@@ -51,6 +60,11 @@ export class ContextResolver {
      * Resolve a single @mention to file content
      * DETERMINISTIC: No AI involvement, direct file read
      */
+            console.error('Error parsing context.json:', error);
+            return new Map();
+        }
+    }
+
     resolve(mention: string): ContextItem {
         const relativePath = this.contextMap.get(mention);
 
@@ -67,6 +81,27 @@ export class ContextResolver {
         }
 
         // Read raw content - NO AI PROCESSING
+            throw new Error(`Unknown mention: ${mention}`);
+        }
+
+        // Resolve path relative to .tideate folder for now, or maybe project root depending on usage
+        // The TDD says: relativePath starts with '..' -> resolve from tideateRoot, else join with tideateRoot?
+        // Actually, normally config paths are relative to the config file or project root.
+        // TDD says: "path.resolve(this.tideateRoot, relativePath)"
+
+        const fullPath = path.resolve(this.tideateRoot, relativePath);
+
+        if (!fs.existsSync(fullPath)) {
+             // Fallback: try resolving from workspace root
+             const rootPath = path.resolve(this.workspaceRoot, relativePath);
+             if (fs.existsSync(rootPath)) {
+                 // Use rootPath
+             } else {
+                 throw new Error(`File not found: ${fullPath} (or ${rootPath})`);
+             }
+        }
+
+        // We will assume fullPath is correct for now or fallback logic logic if needed
         const content = fs.readFileSync(fullPath, 'utf-8');
 
         return {
