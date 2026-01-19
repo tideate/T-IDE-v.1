@@ -25,6 +25,16 @@ export class EmulatorManager {
     async startEmulators(): Promise<EmulatorStatus> {
         // Check if firebase CLI is installed
         if (!await this.isFirebaseInstalled()) {
+            const result = await vscode.window.showErrorMessage(
+                'Firebase CLI is not installed or not in PATH.',
+                'Install Now',
+                'Cancel'
+            );
+
+            if (result === 'Install Now') {
+                vscode.env.openExternal(vscode.Uri.parse('https://firebase.google.com/docs/cli'));
+            }
+
             throw new Error('Firebase CLI is not installed or not in PATH.');
         }
 

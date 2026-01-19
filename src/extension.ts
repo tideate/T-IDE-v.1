@@ -526,6 +526,17 @@ export async function deactivate() {
 	// Clean up comment review controller
 	disposeVscodeCommentReviewController()
 
+	// Clean up Firebase services
+	try {
+		const firebaseService = FirebaseServiceProvider.getInstance()
+		await firebaseService.emulatorManager.stopEmulators()
+		firebaseService.consoleMonitor.clearBuffer()
+		firebaseService.hotReloadCoordinator.stopWatching()
+		firebaseService.emulatorStatusBar?.dispose()
+	} catch (error) {
+		Logger.log("Failed to clean up Firebase services: " + error)
+	}
+
 	clearOnboardingModelsCache()
 
 	Logger.log("Cline extension deactivated")
